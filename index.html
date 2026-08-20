@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Споделено Пътуване</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="logo-text">
+                    <h1>Споделено пътуване</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="resetSeatsBtn" class="btn btn-secondary" title="Възстанови изтритите места">
+                    <i class="fa-solid fa-rotate-left"></i> Върни местата
+                </button>
+                <button id="copyTextBtn" class="btn btn-secondary">
+                    <i class="fa-regular fa-copy"></i> Копирай текст
+                </button>
+                <button id="generateCardBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-download"></i> Генерирай визитка
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-layout">
+        <!-- Left Panel -->
+        <section class="panel input-panel">
+            <div class="form-group-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-map-location-dot blue-icon"></i>
+                    <h2>МАРШРУТ</h2>
+                </div>
+                <div class="route-inputs">
+                    <div class="input-field">
+                        <label for="fromLoc">От</label>
+                        <input type="text" id="fromLoc" placeholder="Напр. София">
+                    </div>
+                    <button id="swapLocations" class="swap-btn" title="Размени">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                    <div class="input-field">
+                        <label for="toLoc">До</label>
+                        <input type="text" id="toLoc" placeholder="Напр. Русе">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-section">
+                <div class="section-title">
+                    <i class="fa-regular fa-calendar-days blue-icon"></i>
+                    <h2>ДАТА И ЧАС</h2>
+                </div>
+                <div class="datetime-inputs">
+                    <div class="input-field">
+                        <label for="travelDate">Дата</label>
+                        <input type="date" id="travelDate">
+                    </div>
+                    <div class="input-field">
+                        <label for="travelTime">Час на тръгване</label>
+                        <input type="time" id="travelTime">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-tag blue-icon"></i>
+                    <h2>ЦЕНА</h2>
+                </div>
+                <div class="price-input-container">
+                    <label for="travelPrice">Цена на човек</label>
+                    <div class="price-wrapper">
+                        <input type="number" id="travelPrice" step="0.50" placeholder="0.00">
+                        <span class="currency-label">€</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-section">
+                <div class="section-title">
+                    <i class="fa-regular fa-comment-dots blue-icon"></i>
+                    <h2>ДОПЪЛНИТЕЛНА ИНФОРМАЦИЯ <span class="optional">(по избор)</span></h2>
+                </div>
+                <div class="textarea-wrapper">
+                    <textarea id="extraInfo" maxlength="60" placeholder="Напр. взимам от центъра"></textarea>
+                    <span class="char-count"><span id="charCount">0</span>/60</span>
+                </div>
+            </div>
+
+            <div class="form-group-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-car blue-icon"></i>
+                    <h2>ИЗБЕРИ АВТОМОБИЛ</h2>
+                </div>
+                <div class="car-selector-grid">
+                    <div class="car-option active" data-type="sedan">
+                        <i class="fa-solid fa-car-side"></i>
+                        <span>Седан</span>
+                    </div>
+                    <div class="car-option" data-type="hatchback">
+                        <i class="fa-solid fa-car-rear"></i>
+                        <span>Хечбек</span>
+                    </div>
+                    <div class="car-option" data-type="suv">
+                        <i class="fa-solid fa-truck-pickup"></i>
+                        <span>SUV</span>
+                    </div>
+                    <div class="car-option" data-type="minivan">
+                        <i class="fa-solid fa-van-shuttle"></i>
+                        <span>Миниван</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Middle Column: Interactive Canvas -->
+        <section class="panel car-display-panel">
+            <div class="car-display-header">
+                <h3>ИЗБРАН АВТОМОБИЛ: <span id="selectedCarName">СЕДАН</span></h3>
+            </div>
+            
+            <div class="seat-legend">
+                <div class="legend-item"><span class="dot free"></span> Свободно</div>
+                <div class="legend-item"><span class="dot reserved"></span> Запазено</div>
+                <div class="legend-item"><span class="dot confirmed"></span> Потвърдено</div>
+                <div class="legend-item"><span class="dot driver"></span> Шофьор</div>
+            </div>
+
+            <div class="car-visualizer-container">
+                <div class="car-blueprint-wrapper" id="carCanvas">
+                    <img id="carBaseImg" src="sedan.png" alt="Car Top View" class="car-real-img">
+                    <div class="seats-interactive-layer" id="seatsLayer"></div>
+                </div>
+            </div>
+            
+            <!-- Info Bubble Banner -->
+            <div class="info-bubble-banner">
+                <div class="bubble-item"><i class="fa-solid fa-up-down-left-right"></i> <span><strong>Плъзгане:</strong> Местене</span></div>
+                <div class="bubble-item"><span class="divider">|</span></div>
+                <div class="bubble-item"><i class="fa-solid fa-hand-pointer"></i> <span><strong>Клик:</strong> Цвят</span></div>
+                <div class="bubble-item"><span class="divider">|</span></div>
+                <div class="bubble-item warning"><i class="fa-solid fa-trash-can"></i> <span><strong>Двоен клик:</strong> Изтриване</span></div>
+            </div>
+        </section>
+
+        <!-- Right Column -->
+        <section class="right-column">
+            <div class="panel info-panel">
+                <h3 class="panel-header-title">ИНФОРМАЦИЯ ЗА ПЪТУВАНЕТО</h3>
+                <div class="info-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-icon blue-dot"></div>
+                        <div>
+                            <span class="info-label">От</span>
+                            <span id="dispFrom" class="info-value">---</span>
+                        </div>
+                    </div>
+                    <div class="timeline-line"></div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon red-pin"><i class="fa-solid fa-location-dot"></i></div>
+                        <div>
+                            <span class="info-label">До</span>
+                            <span id="dispTo" class="info-value">---</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-grid-item">
+                        <i class="fa-regular fa-calendar-days info-icon"></i>
+                        <div>
+                            <span class="info-label">Дата</span>
+                            <span id="dispDate" class="info-value-sm">---</span>
+                        </div>
+                    </div>
+                    <div class="info-grid-item">
+                        <i class="fa-regular fa-clock info-icon"></i>
+                        <div>
+                            <span class="info-label">Час</span>
+                            <span id="dispTime" class="info-value-sm">---</span>
+                        </div>
+                    </div>
+                    <div class="info-grid-item full-width">
+                        <i class="fa-solid fa-tag info-icon"></i>
+                        <div>
+                            <span class="info-label">Цена на човек</span>
+                            <span id="dispPrice" class="info-value-sm">0.00 €</span>
+                        </div>
+                    </div>
+                    <div id="dispExtraRow" class="info-grid-item full-width hidden">
+                        <i class="fa-regular fa-comment-dots info-icon"></i>
+                        <div>
+                            <span class="info-label">Забележка</span>
+                            <span id="dispExtra" class="info-value-sm"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Card Area -->
+            <div class="panel preview-panel">
+                <h3 class="panel-header-title">ПРЕГЛЕД НА ВИЗИТКА</h3>
+                <div id="businessCard" class="business-card-preview">
+                    <div class="card-left-car-preview">
+                        <div class="mini-car-wrapper" id="miniCarCanvas">
+                            <img id="cardCarImg" src="sedan.png" alt="Mini Car" class="card-mini-car-img">
+                            <div class="mini-seats-layer" id="miniSeatsLayer"></div>
+                        </div>
+                    </div>
+
+                    <div class="card-right-details">
+                        <div class="card-route-header">
+                            <span id="cardFrom" class="card-city">---</span>
+                            <i class="fa-solid fa-arrow-right card-arrow"></i>
+                            <span id="cardTo" class="card-city">---</span>
+                        </div>
+                        <div class="card-details-grid">
+                            <div class="card-detail"><i class="fa-regular fa-clock"></i> <span id="cardTime">---</span></div>
+                            <div class="card-detail"><i class="fa-regular fa-calendar"></i> <span id="cardDate">---</span></div>
+                            <div class="card-detail"><i class="fa-solid fa-tag"></i> <span id="cardPrice">0.00 €</span></div>
+                            <div class="card-detail"><i class="fa-solid fa-chair"></i> <span id="cardFreeSeats">4 свободни</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer-banner">
+                        <span>СПОДЕЛЕНО ПЪТУВАНЕ</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
